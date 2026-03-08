@@ -33,6 +33,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--base-url', default=None)
     parser.add_argument('--verbose', action='store_true', default=False)
     parser.add_argument('--output-json', default=None)
+    parser.add_argument('--log-to-wandb', action='store_true', default=False)
+    parser.add_argument('--wandb-project', default=None)
+    parser.add_argument('--wandb-entity', default=None)
+    parser.add_argument('--wandb-run-name', default=None)
     return parser.parse_args()
 
 
@@ -84,6 +88,43 @@ def evaluate_task(task: Dict[str, Any], args: argparse.Namespace) -> Dict[str, A
         env.close()
 
 
+def maybe_log_to_wandb(summary: Dict[str, Any], args: argparse.Namespace) -> None:
+    if not args.log_to_wandb:
+        return
+
+    import wandb
+
+    project = args.wandb_project or os.environ.get('WANDB_PROJECT') or 'ledgerlab'
+    entity = args.wandb_entity or os.environ.get('WANDB_ENTITY')
+    run = wandb.init(
+        project=project,
+        entity=entity,
+        name=args.wandb_run_name,
+        job_type='baseline_eval',
+        config={
+            'manifest': summary['manifest'],
+            'model': summary['model'],
+            'split': args.split,
+            'num_tasks': summary['num_tasks'],
+            'max_steps': args.max_steps,
+        },
+    )
+
+    table = wandb.Table(columns=['task_id', 'done', 'reward', 'step_count'])
+    for item in summary['results']:
+        table.add_data(item['task_id'], bool(item['done']), float(item['reward']), int(item['step_count']))
+
+    wandb.log({
+        'baseline/mean_reward': float(summary['mean_reward']),
+        'baseline/min_reward': float(summary['min_reward']),
+        'baseline/max_reward': float(summary['max_reward']),
+        'baseline/done_rate': float(summary['done_rate']),
+        'baseline/num_tasks': int(summary['num_tasks']),
+        'baseline/results': table,
+    })
+    run.finish()
+
+
 def main() -> None:
     args = parse_args()
     manifest_path = resolve_manifest(args)
@@ -115,6 +156,7 @@ def main() -> None:
     print(json.dumps(summary, indent=2, default=str))
     if args.output_json:
         Path(args.output_json).write_text(json.dumps(summary, indent=2, default=str), encoding='utf-8')
+    maybe_log_to_wandb(summary, args)
 
 
 if __name__ == '__main__':
