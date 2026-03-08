@@ -43,7 +43,13 @@
 - Evaluate the fine-tuned checkpoint on the same validation tasks.
 - Compare both in W&B using the same metric set.
 
-## Artifact Persistence
-- Future successful training runs will upload the saved checkpoint directory to W&B as a model artifact from inside 	rain_finbench_grpo.py.
-- This is the persistence mechanism we are using until a persistent Northflank volume is attached.
+## Artifact Persistence`n- Successful training runs upload the saved checkpoint directory to W&B as a `model` artifact from inside `train_finbench_grpo.py`.`n- This is the persistence mechanism we are using until a persistent Northflank volume is attached.`n- The training launcher can now resume from a W&B model artifact via `RESUME_MODEL_ARTIFACT`.
+
+
+## Second Successful Training Run
+- Job: `ledgerlab-medium-train`
+- Run ID: `c2c42e39-7908-4909-81b2-649d88546a72`
+- Status: `SUCCESS`
+- Time: `2026-03-08 17:56 UTC` to `2026-03-08 18:05 UTC`
+- Notes: first successful run after enabling W&B model artifact upload in code.
 
