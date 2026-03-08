@@ -111,12 +111,17 @@ import urllib.request
 
 host = os.environ.get("VLLM_HOST", "127.0.0.1")
 port = os.environ.get("VLLM_PORT", "8000")
+api_key = os.environ.get("VLLM_API_KEY", "dummy")
 deadline = time.time() + int(os.environ.get("VLLM_STARTUP_TIMEOUT", "900"))
 url = f"http://{host}:{port}/v1/models"
 
 while time.time() < deadline:
     try:
-        with urllib.request.urlopen(url, timeout=5) as response:
+        request = urllib.request.Request(
+            url,
+            headers={"Authorization": f"Bearer {api_key}"},
+        )
+        with urllib.request.urlopen(request, timeout=5) as response:
             if response.status == 200:
                 print(f"vLLM ready at {url}")
                 sys.exit(0)
@@ -156,3 +161,4 @@ python3 training/eval_finbench_baseline.py "${eval_args[@]}" "${wandb_args[@]}"
 
 echo "Evaluation artifacts saved under ${run_root}"
 echo "vLLM log saved to ${vllm_log}"
+
