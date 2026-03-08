@@ -1,279 +1,191 @@
-# FinBench — Notebook-Driven Financial Analysis Agent Environment
+﻿# LedgerLab
 
-An **OpenEnv** reinforcement learning environment that trains agents to work like
-data analysts — creating Jupyter notebooks, running cells iteratively, reading data,
-and producing deliverables evaluated against [GDPval](https://huggingface.co/datasets/openai/gdpval) rubrics.
+LedgerLab is an OpenEnv environment for training notebook-driven business agents on long-horizon professional tasks.
 
-## What This Does
+The agent works inside a real workspace with reference files, Jupyter notebooks, persistent memory, and a deterministic reward function tied to deliverables and verified answers. The environment is built for the OpenEnv Hackathon and is aligned to:
+- Statement 2: (Super) Long-Horizon Planning and Instruction Following
+- Statement 3.1: World Modeling / Professional Tasks
+- Partner sub-themes: Scale AI and Mercor
 
-Agents interact with a workspace through **18 MCP tools** to:
+## Submission Links
+- Hugging Face Space: https://huggingface.co/spaces/weebhek/ledgerlab
+- GitHub repo: https://github.com/vivek100/ledgerlab-openenv
+- Space README: [hf_space/README.md](hf_space/README.md)
+- Colab training notebook: [training/ledgerlab_trl_minimal_training_colab.ipynb](training/ledgerlab_trl_minimal_training_colab.ipynb)
+- Minimal Colab guide: [docs/COLAB_SUBMISSION_GUIDE.md](docs/COLAB_SUBMISSION_GUIDE.md)
 
-1. **Explore data** — read Excel/CSV files, search across workspace
-2. **Create notebooks** — add/edit/run cells with a persistent Jupyter kernel
-3. **Produce deliverables** — write Excel reports, summaries, analysis files
-4. **Learn from memory** — load/save notebook templates across episodes
-5. **Get multi-tier rewards** — rubric accuracy + execution quality + memory usage
+## What We Are Submitting For
+### Statement 2: Long-Horizon Planning and Instruction Following
+Why LedgerLab fits:
+- episodes require multi-step tool use, not single-shot QA
+- reward is sparse and delayed until `submit`
+- the agent must inspect files, create notebooks, iterate on analysis, and recover from mistakes
+- the workspace outlives any single model completion and pushes beyond simple context-window reasoning
 
-## Architecture
+Relevant implementation:
+- Environment server: [finbench_env/server/finbench_environment.py](finbench_env/server/finbench_environment.py)
+- Notebook execution: [finbench_env/server/notebook_executor.py](finbench_env/server/notebook_executor.py)
+- Agent loop: [scripts/run_agent.py](scripts/run_agent.py)
+- Training entrypoint: [training/train_finbench_grpo.py](training/train_finbench_grpo.py)
 
-```
-Agent (LLM)  ←── MCP protocol ──→  FinBench (OpenEnv MCPEnvironment)
-     │                                      │
-     │ CallToolAction(tool, args)           │ 18 tools:
-     │                                      │  Workspace: list_files, read_file, write_file,
-     │                                      │             create_folder, search_files
-     │                                      │  Notebook:  create_notebook, read_notebook,
-     │                                      │             add_cell, edit_cell, delete_cell,
-     │                                      │             run_cell, write_and_run, run_all
-     │                                      │  Kernel:    get_kernel_state
-     │                                      │  Memory:    save_to_memory, list_memory,
-     │                                      │             load_from_memory
-     │                                      │  Control:   submit
-     └──── reward ◄─────────────────────────┘
-           Capped: rubric(0.5) + exec_quality(0.25) + memory(0.25)
-           Uncapped: depth bonus
-```
+### Statement 3.1: World Modeling / Professional Tasks
+Why LedgerLab fits:
+- tasks are grounded in realistic spreadsheet and document workflows
+- the agent operates in a partially observable workspace and must build state from files and tool outputs
+- success depends on maintaining consistent internal state across a real multi-step workflow
+- outputs are deliverables, not just text answers
 
-## Quick Start
+Relevant implementation:
+- Workspace tools: [finbench_env/server/workspace.py](finbench_env/server/workspace.py)
+- Memory system: [finbench_env/server/memory.py](finbench_env/server/memory.py)
+- Trace logging: [finbench_env/server/trace.py](finbench_env/server/trace.py)
+- Task data: [data/tasks/task_manifest.json](data/tasks/task_manifest.json)
 
+### Partner Sub-Themes
+#### Scale AI
+Why it fits:
+- the environment is explicitly about long-horizon business workflows in non-code settings
+- tasks include reporting, inventory analysis, scheduling, leasing, location reconciliation, and spreadsheet operations
+
+#### Mercor
+Why it fits:
+- the reward has both capped and uncapped structure
+- capped components score correctness and task completion
+- uncapped depth bonuses reward richer analysis trajectories
+
+Relevant implementation:
+- Reward function: [finbench_env/server/rewards.py](finbench_env/server/rewards.py)
+- Reward redesign notes: [docs/REWARD_REDESIGN.md](docs/REWARD_REDESIGN.md)
+
+## Three Core Challenges We Solved
+### 1. Long-horizon notebook execution
+Most environments stop at text answers. LedgerLab forces the agent to work like an analyst:
+- inspect files
+- create notebooks
+- run cells iteratively
+- react to outputs and errors
+- produce a final artifact
+
+Code:
+- [finbench_env/server/notebook_executor.py](finbench_env/server/notebook_executor.py)
+- [finbench_env/server/finbench_environment.py](finbench_env/server/finbench_environment.py)
+
+### 2. Deterministic reward on real deliverables
+We did not want vague LLM-judge scoring. The environment checks concrete task signals:
+- structural rubric checks
+- submission field verification
+- consistency between output files and submitted values
+- execution quality and memory/process checks
+
+Code and data:
+- [finbench_env/server/rewards.py](finbench_env/server/rewards.py)
+- [data/tasks/task_manifest.json](data/tasks/task_manifest.json)
+- [scripts/generate_fields_llm.py](scripts/generate_fields_llm.py)
+
+### 3. Reusable memory and workflow behavior
+The agent can save and reuse notebook templates and intermediate workflow patterns across episodes.
+
+Code:
+- [finbench_env/server/memory.py](finbench_env/server/memory.py)
+- [finbench_env/server/finbench_environment.py](finbench_env/server/finbench_environment.py)
+
+## Environment Overview
+LedgerLab exposes 18 tools across workspace, notebook, memory, and control surfaces.
+
+Tool families:
+- Workspace: `list_files`, `read_file`, `write_file`, `create_folder`, `search_files`
+- Notebook: `create_notebook`, `read_notebook`, `add_cell`, `edit_cell`, `delete_cell`, `run_cell`, `write_and_run`, `run_all`
+- Kernel: `get_kernel_state`
+- Memory: `save_to_memory`, `list_memory`, `load_from_memory`
+- Control: `submit`
+
+Key files:
+- Environment app: [finbench_env/server/app.py](finbench_env/server/app.py)
+- Environment core: [finbench_env/server/finbench_environment.py](finbench_env/server/finbench_environment.py)
+- Client: [finbench_env/client.py](finbench_env/client.py)
+- OpenEnv spec: [finbench_env/openenv.yaml](finbench_env/openenv.yaml)
+
+## Dataset And Training Data
+Current dataset status:
+- `46` curated GDPval-style tasks
+- deterministic verified `submission_fields` for all `46`
+- train/validation split: `34 / 12`
+
+Important data files:
+- Full manifest: [data/tasks/task_manifest.json](data/tasks/task_manifest.json)
+- Train split: [data/tasks/train_manifest.json](data/tasks/train_manifest.json)
+- Validation split: [data/tasks/val_manifest.json](data/tasks/val_manifest.json)
+- Workspace examples: [data/tasks/workspaces](data/tasks/workspaces)
+
+Supporting docs:
+- Dataset scaling: [docs/DATASET_SCALING.md](docs/DATASET_SCALING.md)
+- Data organization: [docs/DATA_ORGANIZATION.md](docs/DATA_ORGANIZATION.md)
+- Submission-field generation: [docs/LLM_FIELD_EXTRACTION.md](docs/LLM_FIELD_EXTRACTION.md)
+
+## Training
+LedgerLab training uses Hugging Face TRL with GRPO.
+
+Training assets:
+- Main HF TRL script: [training/train_finbench_grpo.py](training/train_finbench_grpo.py)
+- Shared helpers: [training/common.py](training/common.py)
+- Baseline evaluation: [training/eval_finbench_baseline.py](training/eval_finbench_baseline.py)
+- Minimal Colab notebook: [training/ledgerlab_trl_minimal_training_colab.ipynb](training/ledgerlab_trl_minimal_training_colab.ipynb)
+- Training runbook: [docs/TRAINING_RUNBOOK.md](docs/TRAINING_RUNBOOK.md)
+- Training results log: [docs/TRAINING_RESULTS.md](docs/TRAINING_RESULTS.md)
+
+Northflank / H100 job assets:
+- Training launcher: [scripts/run_h100_training_only.sh](scripts/run_h100_training_only.sh)
+- Staged training launcher: [scripts/run_h100_training_staged.sh](scripts/run_h100_training_staged.sh)
+- vLLM evaluation launcher: [scripts/run_h100_vllm_eval.sh](scripts/run_h100_vllm_eval.sh)
+- Training job config: [northflank/ledgerlab_training_job.json](northflank/ledgerlab_training_job.json)
+- vLLM eval job config: [northflank/ledgerlab_vllm_eval_job.json](northflank/ledgerlab_vllm_eval_job.json)
+
+## Current Status
+What is done:
+- environment implemented and running locally in Docker
+- Hugging Face Space packaging implemented
+- dataset scaled to `46` tasks with deterministic reward questions
+- HF TRL training pipeline implemented and exercised on H100
+- W&B logging and model artifact persistence implemented
+- minimal Colab HF TRL notebook prepared for submission
+
+What is still being finalized:
+- fair `Qwen/Qwen3-1.7B` base-model vLLM evaluation
+- trained-checkpoint vLLM evaluation on the same validation split
+- final before/after metric snapshot for README and demo
+
+Placeholder results block:
+- Base 1.7B vLLM eval: `TBD`
+- Fine-tuned checkpoint vLLM eval: `TBD`
+- Final before/after reward comparison: `TBD`
+
+## How To Demo This Project
+### Environment demo
+- Space: https://huggingface.co/spaces/weebhek/ledgerlab
+- Health endpoint: `https://weebhek-ledgerlab.hf.space/health`
+
+### Minimal training demo
+- Use the Colab notebook: [training/ledgerlab_trl_minimal_training_colab.ipynb](training/ledgerlab_trl_minimal_training_colab.ipynb)
+- Guide: [docs/COLAB_SUBMISSION_GUIDE.md](docs/COLAB_SUBMISSION_GUIDE.md)
+
+### Full project docs
+- Master plan: [docs/MASTER_PLAN.md](docs/MASTER_PLAN.md)
+- Phase tracking: [docs/PHASES.md](docs/PHASES.md)
+- Submission plan: [docs/SUBMISSION_PLAN.md](docs/SUBMISSION_PLAN.md)
+- Deployment and training plan: [docs/DEPLOYMENT_TRAINING_PLAN.md](docs/DEPLOYMENT_TRAINING_PLAN.md)
+
+## How To Defend It In Judging
+If asked what is novel or difficult here, the clean answer is:
+1. this is a notebook-first OpenEnv environment for long-horizon business work, not a single-shot QA benchmark
+2. the reward is grounded in deterministic task fields and deliverable checks, not only subjective judging
+3. the training pipeline is real HF TRL GRPO, with H100 runs, W&B tracking, and a Colab notebook for the required minimal demo
+
+## Local Quick Start
 ```bash
-# 1. Set up virtual environment
 cd ReactAgentEnv
 python3 -m venv .venv
 source .venv/bin/activate
-
-# 2. Install OpenEnv core (from local repo)
 pip install -e ../OpenEnv
-
-# 3. Install env dependencies
-pip install nbformat jupyter_client ipykernel pandas openpyxl openai
-
-# 4. Create test data (3 synthetic tasks with rubrics)
-python scripts/create_test_data.py
-
-# 5. Run smoke test
+pip install -r training/requirements-smoke.txt
 python scripts/test_e2e.py
-
-# 6. Test with real task + rubric scoring
-python scripts/test_with_task.py
 ```
-
-## Using the Client (Python)
-
-```python
-from finbench_env.client import FinBenchEnv
-
-env = FinBenchEnv(data_path="./data", max_steps=30)
-obs = env.reset(task_id="task_001")
-print(obs.metadata["tool_result"])
-
-# MCP tool calls
-obs = env.call_tool("list_files", path="/reference")
-obs = env.call_tool("create_notebook", path="work/analysis.ipynb")
-obs = env.call_tool("write_and_run",
-    notebook="work/analysis.ipynb",
-    source="import pandas as pd\ndf = pd.read_excel('reference/data.xlsx')\nprint(df.head())")
-obs = env.call_tool("submit")
-print(f"Reward: {obs.reward}")
-```
-
-## Running the Server
-
-```bash
-uvicorn finbench_env.server.app:app --host 0.0.0.0 --port 8000
-```
-
-## Deploying to a Hugging Face Space (Docker)
-
-1. **Create the Space** at [huggingface.co/new-space](https://huggingface.co/new-space): choose **SDK: Docker**, **Hardware: CPU Basic**.
-2. **Create a write token** at [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens).
-3. **Build the bundle and push** (replace `YOUR_USERNAME` and `YOUR_SPACE_NAME`):
-
-```bash
-cd ReactAgentEnv
-source .venv/bin/activate
-python scripts/prepare_hf_space_bundle.py   # creates dist/hf_space/
-
-cd ..
-git clone https://huggingface.co/spaces/YOUR_USERNAME/YOUR_SPACE_NAME hf-finbench-space
-rsync -av --delete ReactAgentEnv/dist/hf_space/ hf-finbench-space/
-cd hf-finbench-space
-git add .
-git commit -m "Update FinBench Space bundle"
-git push   # use HF username + write token as password
-```
-
-Or use the one-shot script (e.g. for Space name **ledgerlab**):
-
-```bash
-export HF_USERNAME=your_hf_username
-export HF_SPACE_NAME=ledgerlab
-./scripts/push_to_hf_space.sh
-```
-
-After the Space builds, check: `curl https://YOUR_USERNAME-ledgerlab.hf.space/health`
-
-Full step-by-step instructions (including LedgerLab naming): [docs/HF_SPACE_DEPLOY.md](docs/HF_SPACE_DEPLOY.md)
-
-## Project Structure
-
-```
-ReactAgentEnv/
-├── finbench_env/                  # The OpenEnv environment
-│   ├── __init__.py
-│   ├── models.py                  # FinBenchState (extends openenv State)
-│   ├── client.py                  # Local client with call_tool() API
-│   ├── server/
-│   │   ├── app.py                 # FastAPI entry (create_app pattern)
-│   │   ├── finbench_environment.py # MCPEnvironment + 18 FastMCP tools
-│   │   ├── notebook_executor.py   # Jupyter kernel + nbformat
-│   │   ├── workspace.py           # File ops + search
-│   │   ├── memory.py              # Persistent memory bank
-│   │   ├── trace.py               # Structured action logging
-│   │   └── rewards.py             # 3-signal reward (structural + submission + consistency)
-│   ├── openenv.yaml               # OpenEnv spec
-│   └── pyproject.toml             # Package deps
-├── data/
-│   ├── tasks/                     # Curated GDPval tasks
-│   │   ├── task_manifest.json
-│   │   └── workspaces/{task_id}/reference/
-│   ├── memory_seed/               # Pre-seeded memory templates
-│   └── _persistent_memory/        # Agent-grown memory (persists across episodes)
-├── traces/                        # Episode traces (JSON)
-├── scripts/
-│   ├── test_e2e.py                # Smoke test (all 18 tools)
-│   ├── test_with_task.py          # Full task test with rubric scoring
-│   ├── create_test_data.py        # Generate 3 synthetic tasks
-│   ├── run_agent.py               # Inference agent (OpenAI-compatible)
-│   └── generate_submission_fields.py  # Extract gold values for submission fields
-├── docs/
-│   ├── MASTER_PLAN.md             # Full design document
-│   ├── PHASES.md                  # Phase-by-phase implementation plan
-│   ├── REWARD_REDESIGN.md         # Reward function redesign rationale
-│   └── SUBMISSION_PLAN.md         # Hackathon checklist & roadmap
-└── training/
-    └── train_finbench_grpo.py     # TRL GRPO training (Qwen3-1.7B)
-```
-
-## Reward System (3-Signal Architecture)
-
-The reward function uses three deterministic signals to evaluate the agent's
-output, replacing the previous naive NL rubric matching.
-
-See [`docs/REWARD_REDESIGN.md`](docs/REWARD_REDESIGN.md) for full design rationale.
-
-### Rubric Score (0.50 total weight)
-
-| Signal | Weight | What it measures |
-|--------|--------|------------------|
-| **Structural** | 0.25 | File exists, headers present, row counts, column completeness — auto-parsed from rubric NL |
-| **Submission Fields** | 0.60 | 3-5 key numeric/text values the agent must report at submit time, compared to gold file answers |
-| **Consistency** | 0.15 | Cross-check that submitted values appear in the agent's actual output Excel file |
-
-### Other Signals
-
-| Component | Weight | What it measures |
-|-----------|--------|------------------|
-| **Execution Quality** | 0.25 | 8 binary checks: explored workspace, read refs first, created notebook, used search, 3+ cells, error recovery, verified output, produced deliverable |
-| **Memory & Process** | 0.25 | 8 binary checks: read templates, self-referenced, organized workspace, documented work, structured notebooks, created intermediates, saved to memory, checked state |
-| **Depth Bonus** | uncapped | +0.1 per reference file read, +0.1 per deep notebook, +0.1 per edit, +0.2 for saving to memory |
-
-### How Submission Fields Work
-
-Each task in `task_manifest.json` defines `submission_fields` — structured
-questions the agent must answer from its analysis:
-
-```json
-{
-  "submission_fields": [
-    {"key": "total_shipped_cost", "type": "number", "description": "Total shipped $ at cost", "expected": 140008.20, "tolerance": 1.0},
-    {"key": "po_row_count", "type": "integer", "description": "Number of PO data rows", "expected": 67}
-  ]
-}
-```
-
-The agent sees these as verification questions in its prompt and provides answers
-via `submit(submission_values='{"total_shipped_cost": 140008.20, "po_row_count": 67}')`.
-This is the primary correctness signal (60% of rubric weight).
-
-## OpenEnv Patterns Used
-
-This environment follows the exact patterns from `envs/finqa_env/` and `envs/echo_env/`:
-
-- **`MCPEnvironment`** base class — auto-routes `ListToolsAction`/`CallToolAction`
-- **`FastMCP`** tool registration — `@mcp.tool` decorators in `__init__`
-- **`create_app(factory, ActionCls, ObsCls)`** — standard OpenEnv server pattern
-- **`CallToolAction`/`CallToolObservation`** — standard MCP action/observation types
-
-## Hackathon Problem Statements
-
-- **Statement 2:** Long-Horizon Planning & Instruction Following
-- **Statement 3.1:** Professional Services Tasks
-- **Mercor:** Capped + uncapped rewards scaling with output quality
-- **Scale AI:** Long-horizon business workflows with verifiable rubrics
-
-## Troubleshooting
-
-| Error | Fix |
-|-------|-----|
-| `No module named 'openenv'` | `pip install -e /path/to/OpenEnv` |
-| `No module named 'fastmcp'` | Comes with `openenv-core[core]` |
-| Kernel won't start | `pip install ipykernel` in your venv |
-| Cell outputs out of order | Fixed — iopub drain + parent_header filtering |
-
-## Running the Agent
-
-```bash
-# HF Inference (small trainable model)
-export HF_TOKEN=...
-python scripts/run_agent.py --model Qwen/Qwen3-1.7B --base-url https://router.huggingface.co/v1
-
-# OpenAI (quick testing)
-export OPENAI_API_KEY=...
-python scripts/run_agent.py --model gpt-4o-mini
-
-# Local vLLM
-python scripts/run_agent.py --model Qwen/Qwen3-1.7B --base-url http://localhost:8000/v1 --api-key dummy
-```
-
-### Agent Reliability Updates (Phase 1)
-
-- `scripts/run_agent.py` now appends exact required deliverable filenames from the task metadata to the user task message (for example `output/PO Log June Ships.xlsx`).
-- The agent loop now validates required tool arguments before calling MCP tools and returns a retryable validation error instead of letting malformed calls break execution.
-- The agent loop includes a text-based tool-call fallback parser for models that output tool calls in text when `tool_calls` is empty.
-- Notebook tool responses are now more actionable:
-  - `create_notebook` returns a concrete `write_and_run(...)` example using the exact notebook path.
-  - `write_and_run` now includes `notebook_summary` with current `cell_count`, recent `cell_id`s, and append guidance.
-
-No LangGraph needed — uses the same OpenAI function-calling pattern as `OpenEnv/examples/finqa_inference.py`.
-
-### Test Results
-
-| Model | Task | Steps | Reward | Submission Score | Notes |
-|-------|------|-------|--------|-----------------|-------|
-| Qwen3-235B | PO Log June Ships | 22/30 | 0.6313 | 0.50 (2/4 fields) | Created file, submitted values, partial correctness |
-| Qwen2.5-72B | PO Log June Ships | 20/25 | timeout | — | Got stuck debugging Excel column parsing |
-
-## Training (TRL GRPO)
-
-```bash
-pip install trl vllm
-python training/train_finbench_grpo.py  # H100 with vLLM
-```
-
-Trains `Qwen/Qwen3-1.7B` with GRPO — each rollout is one FinBench episode.
-Same pattern as the [OpenEnv Wordle GRPO tutorial](https://github.com/huggingface/trl/blob/main/examples/notebooks/openenv_wordle_grpo.ipynb).
-
-## Docs
-
-- **`docs/SUBMISSION_PLAN.md`** — Hackathon checklist, judging criteria, full roadmap
-- **`docs/PHASES.md`** — Phase-by-phase build status
-- **`docs/REWARD_REDESIGN.md`** — Reward function redesign: why 3 signals, what changed, design rationale
-
-## References
-
-- [GDPval Dataset](https://huggingface.co/datasets/openai/gdpval)
-- [OpenEnv Framework](https://github.com/meta-pytorch/OpenEnv)
-- [OpenEnv Tutorial: Training](OpenEnv/tutorial/04-training.md)
-- [TRL OpenEnv](https://huggingface.co/docs/trl/main/en/openenv)
-- [APEX-Agents](https://arxiv.org/abs/2601.14242) (rubric inspiration)
