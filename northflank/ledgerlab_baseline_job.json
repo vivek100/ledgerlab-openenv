@@ -1,0 +1,43 @@
+{
+  "name": "ledgerlab-baseline-eval",
+  "description": "Manual H100 baseline eval job for LedgerLab.",
+  "billing": {
+    "deploymentPlan": "nf-gpu-hack-16-192-gpu"
+  },
+  "deployment": {
+    "region": "meta-openenv",
+    "external": {
+      "registryProvider": "dockerhub",
+      "privateImage": false,
+      "imagePath": "nvidia/cuda:12.4.1-runtime-ubuntu22.04"
+    },
+    "docker": {
+      "configType": "customCommand",
+      "customCommand": "bash -lc 'set -euo pipefail; export HF_HOME=/workspace/.cache/huggingface; export TRANSFORMERS_CACHE=/workspace/.cache/huggingface; mkdir -p /workspace; cd /workspace; apt-get update && apt-get install -y --no-install-recommends ca-certificates git python3 python3-pip && rm -rf /var/lib/apt/lists/*; rm -rf ledgerlab-openenv; git clone --depth 1 --branch main https://github.com/vivek100/ledgerlab-openenv ledgerlab-openenv; cd ledgerlab-openenv; bash scripts/run_h100_baseline_only.sh'"
+    },
+    "storage": {
+      "ephemeralStorage": {
+        "storageSize": 61440
+      },
+      "shmSize": 64
+    },
+    "gpu": {
+      "enabled": true,
+      "configuration": {
+        "gpuType": "h100-80",
+        "gpuCount": 1
+      }
+    }
+  },
+  "runtimeEnvironment": {
+    "WANDB_PROJECT": "ledgerlab",
+    "WANDB_ENTITY": "shukla-vivek1993-startup",
+    "BASELINE_MODEL": "Qwen/Qwen3-235B-A22B-Instruct-2507"
+  },
+  "settings": {
+    "backoffLimit": 0,
+    "activeDeadlineSeconds": 14400
+  },
+  "backoffLimit": 0,
+  "activeDeadlineSeconds": 14400
+}
