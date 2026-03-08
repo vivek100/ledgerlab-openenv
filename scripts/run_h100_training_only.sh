@@ -4,6 +4,8 @@ set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 export HF_HOME="${HF_HOME:-/workspace/.cache/huggingface}"
 export TRANSFORMERS_CACHE="${TRANSFORMERS_CACHE:-/workspace/.cache/huggingface}"
+export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}"
+export TOKENIZERS_PARALLELISM="false"
 
 apt-get update
 apt-get install -y --no-install-recommends python3 python3-pip git
@@ -24,17 +26,20 @@ python3 -m ipykernel install --sys-prefix --name python3
 mkdir -p traces data/_persistent_memory
 
 ts="$(date +%Y%m%d-%H%M%S)"
-run_root="/workspace/outputs/ledgerlab-medium-${ts}"
+run_root="/workspace/outputs/ledgerlab-train-${ts}"
 mkdir -p "${run_root}"
 
-export WANDB_NAME="${WANDB_TRAIN_NAME:-ledgerlab-grpo-medium-${ts}}"
-export WANDB_RUN_GROUP="${WANDB_RUN_GROUP:-ledgerlab-grpo-medium}"
+export WANDB_NAME="${WANDB_TRAIN_NAME:-ledgerlab-grpo-conservative-${ts}}"
+export WANDB_RUN_GROUP="${WANDB_RUN_GROUP:-ledgerlab-grpo-conservative}"
 python3 training/train_finbench_grpo.py \
-  --max-train-tasks "${TRAIN_TASK_LIMIT:-34}" \
-  --repeats-per-task "${REPEATS_PER_TASK:-2}" \
-  --num-train-epochs "${NUM_TRAIN_EPOCHS:-2}" \
-  --max-turns "${MAX_TURNS:-12}" \
-  --save-steps "${SAVE_STEPS:-20}" \
+  --max-train-tasks "${TRAIN_TASK_LIMIT:-8}" \
+  --repeats-per-task "${REPEATS_PER_TASK:-1}" \
+  --num-train-epochs "${NUM_TRAIN_EPOCHS:-1}" \
+  --max-turns "${MAX_TURNS:-8}" \
+  --num-generations "${NUM_GENERATIONS:-1}" \
+  --max-completion-length "${MAX_COMPLETION_LENGTH:-160}" \
+  --max-prompt-length "${MAX_PROMPT_LENGTH:-2048}" \
+  --save-steps "${SAVE_STEPS:-10}" \
   --output-dir "${run_root}/model" \
   --no-vllm
 
