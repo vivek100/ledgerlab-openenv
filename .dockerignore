@@ -9,7 +9,6 @@ __pycache__/
 traces/
 OpenEnv Hackathon Technical content.pdf
 docs/
-training/
 *.ipynb_checkpoints
 .vscode/
 .idea/
