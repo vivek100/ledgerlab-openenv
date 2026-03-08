@@ -1,4 +1,4 @@
-# Training Results
+﻿# Training Results
 
 ## Baseline Reference
 - Job: `ledgerlab-baseline-eval`
@@ -43,8 +43,10 @@
 - Evaluate the fine-tuned checkpoint on the same validation tasks.
 - Compare both in W&B using the same metric set.
 
-## Artifact Persistence`n- Successful training runs upload the saved checkpoint directory to W&B as a `model` artifact from inside `train_finbench_grpo.py`.`n- This is the persistence mechanism we are using until a persistent Northflank volume is attached.`n- The training launcher can now resume from a W&B model artifact via `RESUME_MODEL_ARTIFACT`.
-
+## Artifact Persistence
+- Successful training runs upload the saved checkpoint directory to W&B as a `model` artifact from inside `train_finbench_grpo.py`.
+- This is the persistence mechanism we are using until a persistent Northflank volume is attached.
+- The training launcher can now resume from a W&B model artifact via `RESUME_MODEL_ARTIFACT`.
 
 ## Second Successful Training Run
 - Job: `ledgerlab-medium-train`
@@ -53,3 +55,22 @@
 - Time: `2026-03-08 17:56 UTC` to `2026-03-08 18:05 UTC`
 - Notes: first successful run after enabling W&B model artifact upload in code.
 
+## Third Successful Training Run
+- Job: `ledgerlab-medium-train`
+- Run ID: `ade1d23e-ada3-4387-bfd9-fa19e2df8dff`
+- Status: `SUCCESS`
+- Time: `2026-03-08 18:38 UTC` to `2026-03-08 18:47 UTC`
+- W&B run: `https://wandb.ai/shukla-vivek1993-startup/ledgerlab/runs/bro9muud`
+- Saved model path: `/workspace/outputs/ledgerlab-train-20260308-184154/model`
+- W&B model artifact: `ledgerlab-model-bro9muud`
+- Note: this was a resumed conservative run from the previous trained artifact, not the staged multi-phase launcher.
+
+## vLLM Eval Plan
+- Base-model eval job:
+  - serve `Qwen/Qwen3-1.7B` locally with vLLM on the H100
+  - run `training/eval_finbench_baseline.py` against `http://127.0.0.1:8000/v1`
+- Post-train eval job:
+  - download the latest W&B model artifact
+  - serve it locally with vLLM
+  - rerun the same validation tasks
+- This is the path that will produce the fair before/after comparison charts.

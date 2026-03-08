@@ -1,4 +1,4 @@
-# Training Runbook
+﻿# Training Runbook
 
 ## Current Truth
 - Real training is happening on the H100.
@@ -143,3 +143,43 @@
 - Important design choice:
   - keep `max_turns`, `num_generations`, `max_completion_length`, and `max_prompt_length` fixed
   - only increase task count between phases to increase duration without sharply increasing peak memory
+
+## Latest Successful Resume Run
+- Run ID: `ade1d23e-ada3-4387-bfd9-fa19e2df8dff`
+- W&B run: `https://wandb.ai/shukla-vivek1993-startup/ledgerlab/runs/bro9muud`
+- W&B model artifact: `ledgerlab-model-bro9muud`
+- This is currently the best checkpoint to resume from for the next staged run.
+
+## vLLM Eval Path
+- Script: `scripts/run_h100_vllm_eval.sh`
+- Purpose:
+  - serve base `Qwen/Qwen3-1.7B` on the H100 with local vLLM
+  - or serve a fine-tuned checkpoint downloaded from W&B
+  - run the existing OpenAI-compatible eval script against `http://127.0.0.1:8000/v1`
+- Supporting files:
+  - `training/requirements-eval.txt`
+  - `northflank/ledgerlab_vllm_eval_job.json`
+
+### Baseline vLLM Mode
+- Runtime env:
+  - `BASE_MODEL_SOURCE=Qwen/Qwen3-1.7B`
+  - `SERVED_MODEL_NAME=Qwen/Qwen3-1.7B`
+  - leave `RESUME_MODEL_ARTIFACT` unset
+- Result:
+  - fair base-model validation run on the same `1.7B` family used for training
+
+### Post-Train vLLM Mode
+- Runtime env:
+  - `RESUME_MODEL_ARTIFACT=shukla-vivek1993-startup/ledgerlab/ledgerlab-model-bro9muud:latest`
+  - `SERVED_MODEL_NAME=ledgerlab-qwen3-1.7b-ft`
+- Result:
+  - local serving of the trained checkpoint through the same eval codepath
+
+### Why This Matters
+- This is the clean comparison path we were missing:
+  - base `Qwen/Qwen3-1.7B` eval
+  - trained `Qwen/Qwen3-1.7B` checkpoint eval
+  - same validation split
+  - same metrics
+
+
