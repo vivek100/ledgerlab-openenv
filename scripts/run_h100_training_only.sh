@@ -32,14 +32,14 @@ mkdir -p "${run_root}"
 export WANDB_NAME="${WANDB_TRAIN_NAME:-ledgerlab-grpo-conservative-${ts}}"
 export WANDB_RUN_GROUP="${WANDB_RUN_GROUP:-ledgerlab-grpo-conservative}"
 python3 training/train_finbench_grpo.py \
-  --max-train-tasks "${TRAIN_TASK_LIMIT:-8}" \
+  --max-train-tasks "${TRAIN_TASK_LIMIT:-4}" \
   --repeats-per-task "${REPEATS_PER_TASK:-1}" \
   --num-train-epochs "${NUM_TRAIN_EPOCHS:-1}" \
-  --max-turns "${MAX_TURNS:-8}" \
-  --num-generations "${NUM_GENERATIONS:-1}" \
-  --max-completion-length "${MAX_COMPLETION_LENGTH:-160}" \
-  --max-prompt-length "${MAX_PROMPT_LENGTH:-2048}" \
-  --save-steps "${SAVE_STEPS:-10}" \
+  --max-turns "${MAX_TURNS:-6}" \
+  --num-generations "${NUM_GENERATIONS:-2}" \
+  --max-completion-length "${MAX_COMPLETION_LENGTH:-96}" \
+  --max-prompt-length "${MAX_PROMPT_LENGTH:-1536}" \
+  --save-steps "${SAVE_STEPS:-5}" \
   --output-dir "${run_root}/model" \
   --no-vllm
 
