@@ -5,9 +5,11 @@ export DEBIAN_FRONTEND=noninteractive
 export HF_HOME="${HF_HOME:-/workspace/.cache/huggingface}"
 export TRANSFORMERS_CACHE="${TRANSFORMERS_CACHE:-/workspace/.cache/huggingface}"
 export TOKENIZERS_PARALLELISM="false"
+export CC="${CC:-gcc}"
+export CXX="${CXX:-g++}"
 
 apt-get update
-apt-get install -y --no-install-recommends python3 python3-pip git curl
+apt-get install -y --no-install-recommends python3 python3-pip git curl build-essential
 rm -rf /var/lib/apt/lists/*
 
 mkdir -p /workspace/.cache/huggingface /workspace/outputs /workspace/artifacts
