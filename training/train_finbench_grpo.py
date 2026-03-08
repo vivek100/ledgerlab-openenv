@@ -7,6 +7,7 @@ import argparse
 import json
 import os
 import sys
+from inspect import signature
 from typing import Any, Dict, List
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -262,25 +263,34 @@ def main() -> None:
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
     tokenizer.pad_token = tokenizer.eos_token
 
-    grpo_config = GRPOConfig(
-        num_train_epochs=args.num_train_epochs,
-        learning_rate=args.learning_rate,
-        gradient_accumulation_steps=args.gradient_accumulation_steps,
-        per_device_train_batch_size=args.per_device_train_batch_size,
-        warmup_steps=args.warmup_steps,
-        num_generations=args.num_generations,
-        max_completion_length=args.max_completion_length,
-        max_prompt_length=args.max_prompt_length,
-        use_vllm=args.use_vllm,
-        vllm_mode=args.vllm_mode,
-        vllm_gpu_memory_utilization=args.vllm_gpu_memory_utilization,
-        output_dir=args.output_dir,
-        logging_steps=args.logging_steps,
-        save_steps=args.save_steps,
-        gradient_checkpointing=True,
-        gradient_checkpointing_kwargs={"use_reentrant": False},
-        push_to_hub=args.push_to_hub,
-    )
+    config_kwargs = {
+        "num_train_epochs": args.num_train_epochs,
+        "learning_rate": args.learning_rate,
+        "gradient_accumulation_steps": args.gradient_accumulation_steps,
+        "per_device_train_batch_size": args.per_device_train_batch_size,
+        "warmup_steps": args.warmup_steps,
+        "num_generations": args.num_generations,
+        "max_completion_length": args.max_completion_length,
+        "max_prompt_length": args.max_prompt_length,
+        "use_vllm": args.use_vllm,
+        "vllm_mode": args.vllm_mode,
+        "vllm_gpu_memory_utilization": args.vllm_gpu_memory_utilization,
+        "output_dir": args.output_dir,
+        "logging_steps": args.logging_steps,
+        "save_steps": args.save_steps,
+        "gradient_checkpointing": True,
+        "gradient_checkpointing_kwargs": {"use_reentrant": False},
+        "push_to_hub": args.push_to_hub,
+        "report_to": "wandb",
+        "bf16": True,
+    }
+    supported_args = set(signature(GRPOConfig.__init__).parameters)
+    filtered_kwargs = {k: v for k, v in config_kwargs.items() if k in supported_args}
+    skipped_args = sorted(set(config_kwargs) - set(filtered_kwargs))
+    if skipped_args:
+        print(f"Skipping unsupported GRPOConfig args for installed TRL version: {', '.join(skipped_args)}")
+
+    grpo_config = GRPOConfig(**filtered_kwargs)
 
     trainer = GRPOTrainer(
         model=args.model_name,
@@ -307,3 +317,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
