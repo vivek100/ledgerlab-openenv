@@ -80,11 +80,24 @@ printf '\n'
 "${vllm_cmd[@]}" >"${vllm_log}" 2>&1 &
 VLLM_PID=$!
 
+show_vllm_log() {
+  if [[ -f "${vllm_log}" ]]; then
+    echo "===== vLLM log tail ====="
+    tail -n 200 "${vllm_log}" || true
+    echo "===== end vLLM log tail ====="
+  fi
+}
+
 cleanup() {
+  local exit_code=$?
+  if (( exit_code != 0 )); then
+    show_vllm_log
+  fi
   if kill -0 "${VLLM_PID}" >/dev/null 2>&1; then
     kill "${VLLM_PID}" || true
     wait "${VLLM_PID}" || true
   fi
+  exit ${exit_code}
 }
 trap cleanup EXIT
 
