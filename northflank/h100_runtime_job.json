@@ -1,0 +1,41 @@
+{
+  "name": "ledgerlab-h100-runtime",
+  "description": "Manual H100 smoke job that bootstraps code and Python deps at runtime on the GPU node.",
+  "billing": {
+    "deploymentPlan": "nf-gpu-hack-16-64",
+    "gpu": {
+      "enabled": true,
+      "configuration": {
+        "gpuType": "h100-80",
+        "gpuCount": 1
+      }
+    }
+  },
+  "deployment": {
+    "region": "meta-openenv",
+    "external": {
+      "imagePath": "docker.io/nvidia/cuda:12.4.1-runtime-ubuntu22.04"
+    },
+    "docker": {
+      "configType": "customCommand",
+      "customCommand": "bash -lc 'set -euo pipefail; export HF_HOME=/workspace/.cache/huggingface; export TRANSFORMERS_CACHE=/workspace/.cache/huggingface; mkdir -p /workspace; cd /workspace; apt-get update && apt-get install -y --no-install-recommends ca-certificates git python3 python3-pip && rm -rf /var/lib/apt/lists/*; rm -rf ledgerlab-openenv; git clone --depth 1 --branch main https://github.com/vivek100/ledgerlab-openenv ledgerlab-openenv; cd ledgerlab-openenv; bash scripts/run_h100_runtime_bootstrap.sh'"
+    },
+    "storage": {
+      "ephemeralStorage": {
+        "storageSize": 16384
+      },
+      "shmSize": 1024
+    }
+  },
+  "runtimeEnvironment": {
+    "PYTHONUNBUFFERED": "1",
+    "HF_HOME": "/workspace/.cache/huggingface",
+    "TRANSFORMERS_CACHE": "/workspace/.cache/huggingface"
+  },
+  "settings": {
+    "backoffLimit": 0,
+    "activeDeadlineSeconds": 14400
+  },
+  "backoffLimit": 0,
+  "activeDeadlineSeconds": 14400
+}
