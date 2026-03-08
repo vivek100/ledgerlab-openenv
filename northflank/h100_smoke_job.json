@@ -1,40 +1,66 @@
 {
   "name": "ledgerlab-h100-smoke",
   "description": "Manual H100 smoke job for LedgerLab baseline eval and GRPO startup validation.",
-  "deployment": {
-    "region": "meta-openenv"
-  },
   "billing": {
+    "buildPlan": "nf-gpu-hack-16-32-build",
     "deploymentPlan": "nf-gpu-hack-16-64",
-    "buildPlan": "nf-gpu-hack-16-32-build"
-  },
-  "buildSettings": {
-    "dockerfile": {
-      "dockerFilePath": "/Dockerfile.train",
-      "dockerWorkDir": "/",
-      "buildEngine": "kaniko",
-      "useCache": true
+    "gpu": {
+      "enabled": true,
+      "configuration": {
+        "gpuType": "h100-80",
+        "gpuCount": 1
+      }
     }
   },
-  "vcsData": {
-    "accountLogin": "vivek100",
-    "projectUrl": "https://github.com/vivek100/ledgerlab-openenv",
-    "projectBranch": "main"
+  "deployment": {
+    "region": "meta-openenv",
+    "docker": {
+      "configType": "customCommand",
+      "customCommand": "bash scripts/run_h100_smoke.sh"
+    },
+    "storage": {
+      "ephemeralStorage": {
+        "storageSize": 16384
+      },
+      "shmSize": 1024
+    },
+    "vcs": {
+      "projectUrl": "https://github.com/vivek100/ledgerlab-openenv",
+      "projectType": "github",
+      "accountLogin": "vivek100",
+      "projectBranch": "main"
+    }
   },
-  "docker": {
-    "configType": "customCommand",
-    "customCommand": "bash scripts/run_h100_smoke.sh"
+  "buildConfiguration": {
+    "storage": {
+      "ephemeralStorage": {
+        "storageSize": 16384
+      }
+    }
+  },
+  "buildSettings": {
+    "storage": {
+      "ephemeralStorage": {
+        "storageSize": 16384
+      }
+    },
+    "dockerfile": {
+      "buildEngine": "kaniko",
+      "dockerFilePath": "/Dockerfile.train",
+      "dockerWorkDir": "/",
+      "useCache": true
+    }
   },
   "runtimeEnvironment": {
     "PYTHONUNBUFFERED": "1",
     "HF_HOME": "/workspace/.cache/huggingface",
     "TRANSFORMERS_CACHE": "/workspace/.cache/huggingface"
   },
+  "settings": {
+    "backoffLimit": 0,
+    "runOnSourceChange": "never",
+    "activeDeadlineSeconds": 14400
+  },
   "backoffLimit": 0,
-  "activeDeadlineSeconds": 14400,
-  "gpuConfiguration": {
-    "enabled": true,
-    "gpuType": "h100-80",
-    "gpuCount": 1
-  }
+  "activeDeadlineSeconds": 14400
 }
