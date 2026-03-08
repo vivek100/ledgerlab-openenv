@@ -1,0 +1,20 @@
+{
+  "task_count": 12,
+  "task_ids": [
+    "c357f0e2-963d-4eb7-a6fa-3078fe55b3ba",
+    "327fbc21-7d26-4964-bf7c-f4f41e55c54d",
+    "19403010-3e5c-494e-a6d3-13594e99f6af",
+    "d7cfae6f-4a82-4289-955e-c799dfe1e0f4",
+    "f841ddcf-2a28-4f6d-bac3-61b607219d3e",
+    "7b08cd4d-df60-41ae-9102-8aaa49306ba2",
+    "efca245f-c24f-4f75-a9d5-59201330ab7a",
+    "b7a5912e-0e63-41f5-8c22-9cdb8f46ab01",
+    "47ef842d-8eac-4b90-bda8-dd934c228c96",
+    "9e39df84-ac57-4c9b-a2e3-12b8abf2c797",
+    "76418a2c-a3c0-4894-b89d-2493369135d9",
+    "7ed932dd-244f-4d61-bf02-1bc3bab1af14"
+  ],
+  "sources": [
+    "gdpval"
+  ]
+}

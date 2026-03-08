@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+.env
+traces/
+dist/
+.vscode/
+.idea/
+*.ipynb_checkpoints/
+data/_persistent_memory/
+OpenEnv Hackathon Technical content.pdf

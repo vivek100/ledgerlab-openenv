@@ -1,0 +1,20 @@
+FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive     PYTHONDONTWRITEBYTECODE=1     PYTHONUNBUFFERED=1     PIP_NO_CACHE_DIR=1     PYTHONPATH=/app     HF_HOME=/workspace/.cache/huggingface     TRANSFORMERS_CACHE=/workspace/.cache/huggingface     VLLM_WORKER_MULTIPROC_METHOD=spawn
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends     python3     python3-pip     python3-venv     git     curl     tini     build-essential     && rm -rf /var/lib/apt/lists/*
+
+RUN python3 -m pip install --upgrade pip setuptools wheel
+RUN python3 -m pip install --index-url https://download.pytorch.org/whl/cu124     torch torchvision torchaudio
+RUN python3 -m pip install     "openenv-core[core]>=0.2.1"     "fastapi>=0.115.0"     "pydantic>=2.0.0"     "uvicorn>=0.24.0"     "requests>=2.31.0"     "nbformat>=5.10.0"     "jupyter_client>=8.6.0"     "ipykernel>=6.29.0"     "pandas>=2.2.0"     "openpyxl>=3.1.0"     "datasets>=2.19.0"     "openai>=1.0.0"     "python-dotenv>=1.0.1"     "transformers>=4.48.0"     "accelerate>=1.2.0"     "trl>=0.15.0"     "vllm>=0.7.0"     "wandb>=0.19.0"
+
+RUN python3 -m ipykernel install --sys-prefix --name python3
+
+COPY . /app
+
+RUN mkdir -p /app/traces /app/data/_persistent_memory /workspace/.cache/huggingface /workspace/outputs
+
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["bash"]

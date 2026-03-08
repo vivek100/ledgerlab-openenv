@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "finbench-env"
+version = "0.1.0"
+description = "Notebook-driven financial analysis agent environment for OpenEnv"
+requires-python = ">=3.10"
+dependencies = [
+    "openenv-core[core]>=0.2.1",
+    "fastapi>=0.115.0",
+    "pydantic>=2.0.0",
+    "uvicorn>=0.24.0",
+    "requests>=2.31.0",
+    "nbformat>=5.10.0",
+    "jupyter_client>=8.6.0",
+    "ipykernel>=6.29.0",
+    "pandas>=2.2.0",
+    "openpyxl>=3.1.0",
+    "datasets>=2.19.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "langchain-openai>=0.1.0",
+    "langgraph>=0.2.0",
+]
