@@ -67,6 +67,8 @@ vllm_cmd=(
   --gpu-memory-utilization "${VLLM_GPU_MEMORY_UTILIZATION}"
   --max-model-len "${VLLM_MAX_MODEL_LEN}"
   --generation-config vllm
+  --enable-auto-tool-choice
+  --tool-call-parser hermes
 )
 
 if [[ "${VLLM_TRUST_REMOTE_CODE:-false}" == "true" ]]; then
@@ -161,4 +163,5 @@ python3 training/eval_finbench_baseline.py "${eval_args[@]}" "${wandb_args[@]}"
 
 echo "Evaluation artifacts saved under ${run_root}"
 echo "vLLM log saved to ${vllm_log}"
+
 
