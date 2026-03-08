@@ -81,3 +81,51 @@
 1. persistent storage for checkpoints
 2. post-train validation eval against the saved checkpoint
 3. optional local vLLM serving for post-train evaluation through the existing OpenAI-compatible runner
+
+## Recorded Runs
+### Baseline Eval Success
+- Job: `ledgerlab-baseline-eval`
+- Run ID: `2e32c1da-f4a3-47eb-a32c-c802da2e3e5f`
+- Status: `SUCCESS`
+- Time: `2026-03-08 17:12 UTC` to `2026-03-08 17:24 UTC`
+- W&B run: `https://wandb.ai/shukla-vivek1993-startup/ledgerlab/runs/cx1mhzzr`
+- Summary file: `/workspace/outputs/ledgerlab-baseline-20260308-171452.json`
+- Metrics:
+  - `num_tasks = 12`
+  - `mean_reward = 0.005933333333333329`
+  - `done_rate = 1.0`
+- Caveat: this baseline used `Qwen/Qwen3-235B-A22B-Instruct-2507`, so it is useful as an operational reference but not the final fair comparison to the fine-tuned `1.7B` model.
+
+### Conservative Training Success
+- Job: `ledgerlab-medium-train`
+- Run ID: `10032551-a954-4330-b09a-1a8f365e4d71`
+- Status: `SUCCESS`
+- Time: `2026-03-08 17:40 UTC` to `2026-03-08 17:43 UTC`
+- W&B run: `https://wandb.ai/shukla-vivek1993-startup/ledgerlab/runs/obfa3dim`
+- Saved model path: `/workspace/outputs/ledgerlab-train-20260308-174221/model`
+- Training settings that worked:
+  - `train_tasks = 4`
+  - `dataset_rows = 4`
+  - `max_steps = 4`
+  - `max_turns = 6`
+  - `num_generations = 2`
+  - `max_completion_length = 96`
+  - `max_prompt_length = 1536`
+
+## Current Safe Scale-Up Plan
+- Keep the low-memory generation settings fixed.
+- Increase duration by increasing train task count first.
+- Next run target:
+  - `train_tasks = 8`
+  - `dataset_rows = 8`
+  - `max_turns = 6`
+  - `num_generations = 2`
+  - `max_completion_length = 96`
+  - `max_prompt_length = 1536`
+- Reason: this should lengthen training without materially increasing peak memory in the same way that longer prompts/completions or extra generations would.
+
+## Checkpoint Persistence
+- Successful training runs now upload the saved model directory to W&B as a model artifact when a W&B run is active.
+- This avoids losing trained weights when the Northflank job uses only ephemeral storage.
+- Future continuation runs should resume from the downloaded W&B model artifact or from a persistent volume copy.
+

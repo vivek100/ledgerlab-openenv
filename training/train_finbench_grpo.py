@@ -214,6 +214,42 @@ def reward_rubric(completions, **kwargs):
     return [float(r) for r in rewards] if rewards else [0.0] * len(completions)
 
 
+def maybe_log_model_artifact(model_dir: str, train_task_count: int, dataset_rows: int, trainer_max_steps: int) -> None:
+    if os.environ.get("WANDB_LOG_MODEL", "true").lower() in {"0", "false", "no"}:
+        print("WANDB_LOG_MODEL disabled; skipping model artifact upload.")
+        return
+
+    try:
+        import wandb
+    except ImportError:
+        print("wandb is not installed; skipping model artifact upload.")
+        return
+
+    run = getattr(wandb, "run", None)
+    if run is None:
+        print("No active wandb run; skipping model artifact upload.")
+        return
+
+    if not os.path.isdir(model_dir):
+        print(f"Model directory not found for artifact upload: {model_dir}")
+        return
+
+    artifact_name = os.environ.get("WANDB_MODEL_ARTIFACT_NAME") or f"ledgerlab-model-{run.id}"
+    artifact = wandb.Artifact(
+        artifact_name,
+        type="model",
+        metadata={
+            "model_dir": os.path.abspath(model_dir),
+            "train_task_count": train_task_count,
+            "dataset_rows": dataset_rows,
+            "trainer_max_steps": trainer_max_steps,
+        },
+    )
+    artifact.add_dir(model_dir)
+    run.log_artifact(artifact)
+    print(f"Uploaded W&B model artifact: {artifact_name}")
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Train LedgerLab/FinBench with GRPO")
     parser.add_argument("--model-name", default=MODEL_NAME)
@@ -316,6 +352,7 @@ def main() -> None:
 
     trainer.save_model(args.output_dir)
     print(f"Model saved to {args.output_dir}")
+    maybe_log_model_artifact(args.output_dir, len(train_tasks), len(dataset_records), trainer_max_steps)
 
 
 if __name__ == "__main__":
