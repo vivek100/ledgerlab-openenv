@@ -1,57 +1,91 @@
 # H100 Smoke Setup
 
 ## Goal
+Run a single manual Northflank H100 job that validates the full LedgerLab training path:
+- optional remote baseline eval against the deployed environment
+- tiny GRPO smoke training run on 2 tasks
+- colocated environment inside the training container
 
-Run the first training smoke test with the environment colocated inside the same runtime as the trainer.
+## Current State
+- GitHub repo: `https://github.com/vivek100/ledgerlab-openenv`
+- Northflank project: `hackathon`
+- Northflank region: `meta-openenv`
+- GPU target: `1 x h100-80`
+- Job spec: `northflank/h100_smoke_job.json`
+- Smoke command: `scripts/run_h100_smoke.sh`
 
-This avoids Hugging Face Space runtime issues blocking training validation.
+## Why This Shape
+For the first smoke run, keep the environment and training code in one container. That removes HF Space and network uncertainty from the first RL validation pass.
 
-## Current Status
+## Required Inputs
+- Linked repo in Northflank: `vivek100/ledgerlab-openenv`
+- Optional project secret: `HF_TOKEN`
 
-Ready:
-- manifest-aware GRPO trainer: `training/train_finbench_grpo.py`
-- baseline eval runner: `training/eval_finbench_baseline.py`
-- training image: `Dockerfile.train`
-- smoke command wrapper: `scripts/run_h100_smoke.sh`
+`HF_TOKEN` is only needed for the remote big-model baseline eval. If it is missing, the smoke script skips baseline eval and still runs GRPO startup validation.
 
-Known infra gap:
-- Northflank CLI auth works
-- project `hackathon` exists
-- no jobs exist yet
-- no linked repository is currently visible in Northflank CLI
+## Job Behavior
+The smoke script does two things:
+1. If `HF_TOKEN` is set, run a 1-task validation baseline using the HF router model `Qwen/Qwen3-235B-A22B-Instruct-2507`
+2. Run a tiny GRPO smoke job with:
+   - `max_train_tasks=2`
+   - `repeats_per_task=1`
+   - `num_train_epochs=1`
+   - `max_turns=8`
 
-## Recommended Resource Target
+Outputs are written to `/workspace/outputs/ledgerlab-grpo-smoke`.
 
-Use:
-- project: `hackathon`
-- region: `meta-openenv` if available, otherwise `us-central` or `us-east1`
-- GPU: `h100-80`
-- count: `1`
-- persistent disk: `50 GB` minimum, `100 GB` preferred
-
-## What The Smoke Run Should Do
-
-1. baseline eval on one validation task
-2. tiny GRPO run on two training tasks
-3. save traces and model outputs
-4. inspect rewards before scaling up
-
-## Smoke Command
-
-Inside the training container:
+## Create The Job
+From WSL:
 
 ```bash
-bash scripts/run_h100_smoke.sh
+cd /home/vivek/projects/openenvHack/ReactAgentEnv
+~/.local/bin/northflank create job manual \
+  --project hackathon \
+  --file northflank/h100_smoke_job.json \
+  -o json
 ```
 
-This runs:
-- `training/eval_finbench_baseline.py --split val --num-tasks 1`
-- `training/train_finbench_grpo.py --max-train-tasks 2 --repeats-per-task 1 --num-train-epochs 1 --max-turns 8 --no-vllm`
+## Add The Optional HF Token Secret
+If you want the baseline eval step enabled:
 
-## Blocking Decision
+```bash
+~/.local/bin/northflank create secret \
+  --project hackathon \
+  --input '{"name":"HF_TOKEN","value":"YOUR_HF_TOKEN"}' \
+  -o json
+```
 
-To create the Northflank job, we still need one deployment source:
-- a linked Git repository, or
-- a pushed container image in a registry Northflank can pull from
+Then attach the secret to the job in the Northflank UI if needed.
 
-Without one of those, the CLI can authenticate and inspect the project, but cannot build or run this repo on Northflank yet.
+## Run The Job
+After the job exists:
+
+```bash
+~/.local/bin/northflank run job ledgerlab-h100-smoke --project hackathon -o json
+```
+
+## Inspect Logs
+List jobs:
+
+```bash
+~/.local/bin/northflank list jobs --project hackathon -o json
+```
+
+Get job details:
+
+```bash
+~/.local/bin/northflank get job ledgerlab-h100-smoke --project hackathon -o json
+```
+
+## Definition Of Done
+- job builds from `Dockerfile.train`
+- container starts successfully on `1 x h100-80`
+- smoke script completes without Python import or runtime crashes
+- training writes outputs under `/workspace/outputs/ledgerlab-grpo-smoke`
+- traces are emitted under `/app/traces`
+
+## Next Step After Smoke Passes
+- attach persistent volume
+- increase train task count
+- enable stronger baseline and eval runs
+- start a longer GRPO training job
