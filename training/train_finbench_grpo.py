@@ -259,6 +259,7 @@ def main() -> None:
         dataset_records.extend([record] * max(1, args.repeats_per_task))
 
     dataset = Dataset.from_dict({"prompt": dataset_records})
+    trainer_max_steps = max(1, len(dataset_records))
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
     tokenizer.pad_token = tokenizer.eos_token
@@ -272,6 +273,7 @@ def main() -> None:
         "num_generations": args.num_generations,
         "max_completion_length": args.max_completion_length,
         "max_prompt_length": args.max_prompt_length,
+        "max_steps": trainer_max_steps,
         "use_vllm": args.use_vllm,
         "vllm_mode": args.vllm_mode,
         "vllm_gpu_memory_utilization": args.vllm_gpu_memory_utilization,
@@ -306,6 +308,7 @@ def main() -> None:
     print(f"Val manifest:   {args.val_manifest}")
     print(f"Train tasks:    {len(train_tasks)}")
     print(f"Dataset rows:   {len(dataset_records)}")
+    print(f"Max steps:      {trainer_max_steps}")
 
     trainer_stats = trainer.train()
     print("\nTraining complete.")
@@ -317,4 +320,5 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
 
