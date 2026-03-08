@@ -129,3 +129,17 @@
 - This avoids losing trained weights when the Northflank job uses only ephemeral storage.
 - Future continuation runs should resume from the downloaded W&B model artifact or from a persistent volume copy.
 
+
+## Staged Training Launcher
+- Script: `scripts/run_h100_training_staged.sh`
+- Purpose: run 2-3 safe training phases inside one H100 job instead of manually restarting jobs.
+- Default phase schedule: `4,8,12`
+- Behavior:
+  1. bootstrap runtime and dependencies once
+  2. optionally resume from a W&B model artifact
+  3. run phase 1 with a small task count
+  4. save checkpoint and use it as the model source for phase 2
+  5. repeat until the schedule is complete
+- Important design choice:
+  - keep `max_turns`, `num_generations`, `max_completion_length`, and `max_prompt_length` fixed
+  - only increase task count between phases to increase duration without sharply increasing peak memory
