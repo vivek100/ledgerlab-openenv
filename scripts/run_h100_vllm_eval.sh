@@ -9,7 +9,7 @@ export CC="${CC:-gcc}"
 export CXX="${CXX:-g++}"
 
 apt-get update
-apt-get install -y --no-install-recommends python3 python3-pip git curl build-essential
+apt-get install -y --no-install-recommends python3 python3-dev python3-pip git curl build-essential
 rm -rf /var/lib/apt/lists/*
 
 mkdir -p /workspace/.cache/huggingface /workspace/outputs /workspace/artifacts
